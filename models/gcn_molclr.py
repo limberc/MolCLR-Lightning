@@ -1,8 +1,8 @@
 import torch.nn.functional as F
 from torch import nn
-from torch_geometric.nn import GCNConv, global_add_pool, global_max_pool, global_mean_pool
+from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
 
-from models.gcn_conv import GCNConv
+from .gcn_conv import MolGCNConv
 
 num_atom_type = 119  # including the extra mask tokens
 num_chirality_tag = 3
@@ -31,7 +31,7 @@ class GCN(nn.Module):
         # List of MLPs
         self.gnns = nn.ModuleList()
         for layer in range(num_layer):
-            self.gnns.append(GCNConv(emb_dim, aggr="add"))
+            self.gnns.append(MolGCNConv(emb_dim, aggr="add"))
 
         # List of batchnorms
         self.batch_norms = nn.ModuleList()
@@ -49,7 +49,7 @@ class GCN(nn.Module):
 
         self.feat_lin = nn.Linear(self.emb_dim, self.feat_dim)
 
-        self.out_lin = nn.Sequential(
+        self.pred_head = nn.Sequential(
             nn.Linear(self.feat_dim, self.feat_dim),
             nn.ReLU(inplace=True),
             # nn.Softplus(),
@@ -73,11 +73,34 @@ class GCN(nn.Module):
 
         h = self.pool(h, data.batch)
         h = self.feat_lin(h)
-        out = self.out_lin(h)
+        out = self.pred_head(h)
 
         return h, out
 
 
-if __name__ == "__main__":
-    model = GCN()
-    print(model)
+class GCNFineTune(GCN):
+    def __init__(self, task='classification', num_layer=5, emb_dim=300, feat_dim=256, drop_ratio=0, pool='mean'):
+        super().__init__(num_layer=num_layer, emb_dim=emb_dim, feat_dim=feat_dim, drop_ratio=drop_ratio, pool=pool)
+        self.task = task
+        if self.task == 'classification':
+            self.pred_head = nn.Sequential(
+                nn.Linear(self.feat_dim, self.feat_dim // 2),
+                nn.Softplus(),
+                nn.Linear(self.feat_dim // 2, 2)
+            )
+        elif self.task == 'regression':
+            self.pred_head = nn.Sequential(
+                nn.Linear(self.feat_dim, self.feat_dim // 2),
+                nn.Softplus(),
+                nn.Linear(self.feat_dim // 2, 1)
+            )
+
+    def load_my_state_dict(self, state_dict):
+        own_state = self.state_dict()
+        for name, param in state_dict.items():
+            if name not in own_state:
+                continue
+            if isinstance(param, nn.parameter.Parameter):
+                # backwards compatibility for serialized parameters
+                param = param.data
+            own_state[name].copy_(param)

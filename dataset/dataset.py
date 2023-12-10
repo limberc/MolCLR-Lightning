@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from rdkit import Chem
 from rdkit.Chem.rdchem import BondType as BT
-# from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch_geometric.data import Data, DataLoader, Dataset
 

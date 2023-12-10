@@ -1,12 +1,19 @@
 import math
 
 import torch
+import torch_sparse
 from torch import nn
 from torch.nn import Parameter
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops
+from torch_geometric.utils.num_nodes import maybe_num_nodes
+from torch_scatter import scatter_add
 
-from models.gcn_molclr import num_bond_direction, num_bond_type
+num_atom_type = 119  # including the extra mask tokens
+num_chirality_tag = 3
+
+num_bond_type = 5  # including aromatic and self-loop edge
+num_bond_direction = 3
 
 
 def gcn_norm(edge_index, num_nodes=None):
@@ -21,9 +28,9 @@ def gcn_norm(edge_index, num_nodes=None):
     return edge_index, deg_inv_sqrt[row] * edge_weight * deg_inv_sqrt[col]
 
 
-class GCNConv(MessagePassing):
+class MolGCNConv(MessagePassing):
     def __init__(self, emb_dim, aggr="add"):
-        super(GCNConv, self).__init__()
+        super(MolGCNConv, self).__init__()
         self.emb_dim = emb_dim
         self.aggr = aggr
 
