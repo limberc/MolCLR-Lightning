@@ -7,8 +7,8 @@ import numpy as np
 import torch
 from rdkit import Chem
 from rdkit.Chem.rdchem import BondType as BT
-# from torch.utils.data import Dataset, DataLoader
-from torch_geometric.data import Data, Dataset
+from torch.utils.data import Dataset
+from torch_geometric.data import Data
 
 ATOM_LIST = list(range(1, 119))
 CHIRALITY_LIST = [
@@ -37,9 +37,6 @@ def read_smiles(data_path):
         for i, row in enumerate(csv_reader):
             smiles = row[-1]
             smiles_data.append(smiles)
-            # mol = Chem.MolFromSmiles(smiles)
-            # if mol != None:
-            #     smiles_data.append(smiles)
     return smiles_data
 
 

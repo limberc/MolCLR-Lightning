@@ -5,8 +5,9 @@ import torch
 from rdkit import Chem, RDLogger
 from rdkit.Chem.Scaffolds.MurckoScaffold import MurckoScaffoldSmiles
 from rdkit.Chem.rdchem import BondType as BT
+from torch.utils.data import Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
-from torch_geometric.data import Data, DataLoader, Dataset
+from torch_geometric.data import Data, DataLoader
 
 RDLogger.DisableLog('rdApp.*')
 

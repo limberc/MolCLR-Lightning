@@ -5,7 +5,8 @@ from torch_geometric.data import DataLoader
 
 
 class MolDataModule(LightningDataModule):
-    def __init__(self, batch_size, data_path, aug='node', num_workers=12, valid_size=0.05):
+    def __init__(self, batch_size=512, data_path='./data/pubchem-10m-clean.txt', aug='node', num_workers=12,
+                 valid_size=0.05):
         super().__init__()
         self.aug = aug
         self.batch_size = batch_size
@@ -17,14 +18,13 @@ class MolDataModule(LightningDataModule):
         if stage == 'fit' or stage is None:
             if self.aug == 'node':
                 from .dataset import MolNodeAugDataset
-                ds = MolNodeAugDataset
+                self.train_dataset = MolNodeAugDataset(self.data_path)
             elif self.aug == 'subgraph':
                 from .dataset_subgraph import MolSubGraphAugDataset
-                ds = MolSubGraphAugDataset
+                self.train_dataset = MolSubGraphAugDataset(self.data_path)
             elif self.aug == 'mix':
                 from .dataset_mix import MolMixAugDataset
-                ds = MolMixAugDataset
-            self.train_dataset = ds(self.data_path)
+                self.train_dataset = MolMixAugDataset(self.data_path)
             self.train_loader, self.valid_loader = self.get_train_validation_data_loaders(self.train_dataset)
 
     def train_dataloader(self):

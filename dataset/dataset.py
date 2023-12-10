@@ -7,7 +7,8 @@ import numpy as np
 import torch
 from rdkit import Chem
 from rdkit.Chem.rdchem import BondType as BT
-from torch_geometric.data import Data, Dataset
+from torch.utils.data import Dataset
+from torch_geometric.data import Data
 
 ATOM_LIST = list(range(1, 119))
 CHIRALITY_LIST = [
@@ -41,12 +42,11 @@ def read_smiles(data_path):
 
 class MolNodeAugDataset(Dataset):
     def __init__(self, data_path):
-        super().__init__()
+        super(Dataset, self).__init__()
         self.smiles_data = read_smiles(data_path)
 
     def __getitem__(self, index):
         mol = Chem.MolFromSmiles(self.smiles_data[index])
-        # mol = Chem.AddHs(mol)
 
         N = mol.GetNumAtoms()
         M = mol.GetNumBonds()

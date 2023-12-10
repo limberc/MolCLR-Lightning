@@ -8,7 +8,8 @@ import numpy as np
 import torch
 from rdkit import Chem
 from rdkit.Chem.rdchem import BondType as BT
-from torch_geometric.data import Data, Dataset
+from torch.utils.data import Dataset
+from torch_geometric.data import Data
 
 ATOM_LIST = list(range(1, 119))
 CHIRALITY_LIST = [
@@ -30,6 +31,16 @@ BONDDIR_LIST = [
 ]
 
 
+def read_smiles(data_path):
+    smiles_data = []
+    with open(data_path) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for i, row in enumerate(csv_reader):
+            smiles = row[-1]
+            smiles_data.append(smiles)
+    return smiles_data
+
+
 def remove_subgraph(Graph, center, percent=0.2):
     assert percent <= 1
     G = Graph.copy()
@@ -41,7 +52,6 @@ def remove_subgraph(Graph, center, percent=0.2):
         neighbors = []
         if len(temp) < 1:
             break
-
         for n in temp:
             neighbors.extend([i for i in G.neighbors(n) if i not in temp])
         for n in temp:
@@ -50,24 +60,13 @@ def remove_subgraph(Graph, center, percent=0.2):
                 removed.append(n)
             else:
                 break
-
         temp = list(set(neighbors))
     return G, removed
 
 
-def read_smiles(data_path):
-    smiles_data = []
-    with open(data_path) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        for i, row in enumerate(csv_reader):
-            smiles = row[-1]
-            smiles_data.append(smiles)
-    return smiles_data
-
-
 class MolMixAugDataset(Dataset):
     def __init__(self, data_path):
-        super(Dataset, self).__init__()
+        super().__init__()
         self.smiles_data = read_smiles(data_path)
 
     def __getitem__(self, index):
