@@ -8,8 +8,7 @@ import numpy as np
 import torch
 from rdkit import Chem
 from rdkit.Chem.rdchem import BondType as BT
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch_geometric.data import Data, DataLoader, Dataset
+from torch_geometric.data import Data, Dataset
 
 ATOM_LIST = list(range(1, 119))
 CHIRALITY_LIST = [
@@ -66,7 +65,7 @@ def read_smiles(data_path):
     return smiles_data
 
 
-class MoleculeDataset(Dataset):
+class MolMixAugDataset(Dataset):
     def __init__(self, data_path):
         super(Dataset, self).__init__()
         self.smiles_data = read_smiles(data_path)
@@ -206,41 +205,3 @@ class MoleculeDataset(Dataset):
 
     def __len__(self):
         return len(self.smiles_data)
-
-
-class MoleculeDatasetWrapper(object):
-    def __init__(self, batch_size, num_workers, valid_size, data_path):
-        super(object, self).__init__()
-        self.data_path = data_path
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.valid_size = valid_size
-
-    def get_data_loaders(self):
-        train_dataset = MoleculeDataset(data_path=self.data_path)
-        train_loader, valid_loader = self.get_train_validation_data_loaders(train_dataset)
-        return train_loader, valid_loader
-
-    def get_train_validation_data_loaders(self, train_dataset):
-        # obtain training indices that will be used for validation
-        num_train = len(train_dataset)
-        indices = list(range(num_train))
-        np.random.shuffle(indices)
-
-        split = int(np.floor(self.valid_size * num_train))
-        train_idx, valid_idx = indices[split:], indices[:split]
-
-        # define samplers for obtaining training and validation batches
-        train_sampler = SubsetRandomSampler(train_idx)
-        valid_sampler = SubsetRandomSampler(valid_idx)
-
-        train_loader = DataLoader(
-            train_dataset, batch_size=self.batch_size, sampler=train_sampler,
-            num_workers=self.num_workers, drop_last=True
-        )
-        valid_loader = DataLoader(
-            train_dataset, batch_size=self.batch_size, sampler=valid_sampler,
-            num_workers=self.num_workers, drop_last=True
-        )
-
-        return train_loader, valid_loader

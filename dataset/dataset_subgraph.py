@@ -8,8 +8,7 @@ import torch
 from rdkit import Chem
 from rdkit.Chem.rdchem import BondType as BT
 # from torch.utils.data import Dataset, DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch_geometric.data import Data, DataLoader, Dataset
+from torch_geometric.data import Data, Dataset
 
 ATOM_LIST = list(range(1, 119))
 CHIRALITY_LIST = [
@@ -78,9 +77,9 @@ def removeSubgraph(Graph, center, percent=0.2):
     return G, removed
 
 
-class MoleculeDataset(Dataset):
+class MolSubGraphAugDataset(Dataset):
     def __init__(self, data_path):
-        super(Dataset, self).__init__()
+        super().__init__()
         self.smiles_data = read_smiles(data_path)
 
     def __getitem__(self, index):
@@ -170,51 +169,13 @@ class MoleculeDataset(Dataset):
         return len(self.smiles_data)
 
 
-class MoleculeDatasetWrapper(object):
-    def __init__(self, batch_size, num_workers, valid_size, data_path):
-        super(object, self).__init__()
-        self.data_path = data_path
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.valid_size = valid_size
-
-    def get_data_loaders(self):
-        train_dataset = MoleculeDataset(data_path=self.data_path)
-        train_loader, valid_loader = self.get_train_validation_data_loaders(train_dataset)
-        return train_loader, valid_loader
-
-    def get_train_validation_data_loaders(self, train_dataset):
-        # obtain training indices that will be used for validation
-        num_train = len(train_dataset)
-        indices = list(range(num_train))
-
-        # random_state = np.random.RandomState(seed=666)
-        # random_state.shuffle(indices)
-        np.random.shuffle(indices)
-
-        split = int(np.floor(self.valid_size * num_train))
-        train_idx, valid_idx = indices[split:], indices[:split]
-
-        # define samplers for obtaining training and validation batches
-        train_sampler = SubsetRandomSampler(train_idx)
-        valid_sampler = SubsetRandomSampler(valid_idx)
-
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, sampler=train_sampler,
-                                  num_workers=self.num_workers, drop_last=True)
-
-        valid_loader = DataLoader(train_dataset, batch_size=self.batch_size, sampler=valid_sampler,
-                                  num_workers=self.num_workers, drop_last=True)
-
-        return train_loader, valid_loader
-
-
 if __name__ == "__main__":
     data_path = 'data/chem_dataset/zinc_standard_agent/processed/smiles.csv'
     # dataset = MoleculeDataset(data_path=data_path)
     # print(dataset)
     # print(dataset.__getitem__(0))
-    dataset = MoleculeDatasetWrapper(batch_size=4, num_workers=4, valid_size=0.1, data_path=data_path)
-    train_loader, valid_loader = dataset.get_data_loaders()
-    for bn, (xis, xjs) in enumerate(train_loader):
-        print(xis, xjs)
-        break
+    # dataset = MoleculeDatasetWrapper(batch_size=4, num_workers=4, valid_size=0.1, data_path=data_path)
+    # train_loader, valid_loader = dataset.get_data_loaders()
+    # for bn, (xis, xjs) in enumerate(train_loader):
+    #     print(xis, xjs)
+    #     break
